@@ -115,6 +115,21 @@ where quantity < 3
 -- Show store_id, product_id, total_quantity, and their rank within the store.
 -- Return only rank 1 and rank 2 for each store.
 
+WITH cte_sales_rank AS (
+	select
+		o.store_id,
+		oi.product_id,
+		sum(oi.quantity) quantity,
+		DENSE_RANK() OVER (PARTITION BY o.store_id ORDER BY sum(oi.quantity) DESC) AS sales_rank
+	from sales.orders o
+	inner join sales.order_items oi
+	on oi.order_id = o.order_id
+	group by o.store_id, oi.product_id
+)
+select
+	*
+from cte_sales_rank
+where sales_rank IN (1, 2)
 
 
 -- Q6.
