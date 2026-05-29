@@ -139,6 +139,19 @@ where sales_rank IN (1, 2)
 -- within the category.
 -- Return only the products ranked 2nd in their category.
 
+with cte_price_rank AS (
+select
+	category_id,
+	product_name,
+	list_price,
+	DENSE_RANK() OVER(PARTITION BY category_id ORDER BY list_price DESC) price_Rank
+from production.products
+)
+select
+	*
+from cte_price_rank
+where price_rank = 2
+
 
 
 -- Q7.
@@ -150,24 +163,35 @@ where sales_rank IN (1, 2)
 --
 -- Run this setup first:
 --
--- CREATE TABLE test_customers (
---     customer_id  INT,
---     first_name   VARCHAR(50),
---     last_name    VARCHAR(50),
---     phone        VARCHAR(20),
---     city         VARCHAR(50)
--- );
+CREATE TABLE test_customers (
+    customer_id  INT,
+    first_name   VARCHAR(50),
+    last_name    VARCHAR(50),
+    phone        VARCHAR(20),
+    city         VARCHAR(50)
+);
 --
--- INSERT INTO test_customers VALUES
---     (1,  'Ali',    'Khan',    '0300-1111111', 'Karachi'),
---     (2,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),
---     (3,  'Ali',    'Khan',    '0300-1111111', 'Karachi'),   -- duplicate of 1
---     (4,  'Usman',  'Malik',   '0333-3333333', 'Islamabad'),
---     (5,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),   -- duplicate of 2
---     (6,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),   -- 3rd copy of 2
---     (7,  'Hina',   'Raza',    '0312-4444444', 'Peshawar');
+INSERT INTO test_customers VALUES
+    (1,  'Ali',    'Khan',    '0300-1111111', 'Karachi'),
+    (2,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),
+    (3,  'Ali',    'Khan',    '0300-1111111', 'Karachi'),   -- duplicate of 1
+    (4,  'Usman',  'Malik',   '0333-3333333', 'Islamabad'),
+    (5,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),   -- duplicate of 2
+    (6,  'Sara',   'Ahmed',   '0321-2222222', 'Lahore'),   -- 3rd copy of 2
+    (7,  'Hina',   'Raza',    '0312-4444444', 'Peshawar');
 --
 -- Now write your query to find the duplicate rows.
+with cte_duplicates AS (
+	select
+		*,
+	ROW_NUMBER() OVER(PARTITION BY first_name, last_name, phone ORDER BY customer_id ASC) AS row_num
+	from test_customers
+)
+select
+	*
+from cte_duplicates
+where row_num > 1
+
 
 
 
@@ -182,6 +206,25 @@ where sales_rank IN (1, 2)
 -- Show month, net_sales, previous_month_sales, and the difference.
 -- Net sales = SUM( quantity * list_price * (1 - discount) )
 
+with cte_monthly_sales AS (
+	select
+		month(o.order_date) as month,
+		sum(quantity * list_price * (1 - discount)) as net_sales,
+		lag(sum(quantity * list_price * (1 - discount))) over(order by month(o.order_date)) as previous_month_sales
+	from sales.order_items as oi
+	inner join sales.orders as o
+	on o.order_id = oi.order_id
+	where o.order_date between '2017-01-01' and '2017-12-31'
+	group by month(o.order_date)
+)
+select
+	month,
+	net_sales,
+	previous_month_sales,
+	net_sales - previous_month_sales as difference
+from cte_monthly_sales;
+	
+
 
 
 -- Q9.
@@ -190,6 +233,13 @@ where sales_rank IN (1, 2)
 -- Show product_name, list_price, and the next lower price
 -- in the same category.
 -- Sort by category_id and list_price descending.
+
+select
+	product_name,
+	list_price,
+	lead(list_price) over(partition by category_id order by list_price desc) AS next_cheaper_price
+from production.products
+order by category_id, list_price desc
 
 
 
@@ -200,6 +250,13 @@ where sales_rank IN (1, 2)
 -- Replace any missing phone with their email address instead.
 -- If both are missing, show 'No Contact Info'.
 -- Sort by last_name, first_name.
+
+select
+	concat(first_name, ' ', last_name),
+	coalesce(phone, email, 'No Contact Info'),
+	email
+from sales.customers
+order by last_name, first_name
 
 
 
