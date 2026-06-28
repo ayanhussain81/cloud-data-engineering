@@ -1,0 +1,7 @@
+Pipeline run: complete
+Records processed: 9500
+Errors: 0
+Next run scheduled: 02:00 UTC
+Next run scheduled: 02:00 UTC
+Next run scheduled: 02:00 UTC
+Next run scheduled: 02:00 UTC
